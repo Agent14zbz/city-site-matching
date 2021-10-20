@@ -1,5 +1,7 @@
 package main;
 
+import processing.core.PApplet;
+
 /**
  * description
  *
@@ -9,4 +11,7 @@ package main;
  * @time 16:39
  */
 public class Main {
+    public static void main(String[] args) {
+        PApplet.main("main.Setup");
+    }
 }
