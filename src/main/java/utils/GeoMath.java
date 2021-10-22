@@ -45,7 +45,7 @@ public class GeoMath {
         setCenter(latLng[0], latLng[1]);
     }
 
-    /* ------------- member function ------------- */
+    /* ------------- math ------------- */
 
     /**
      * @param lat
@@ -97,6 +97,8 @@ public class GeoMath {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return EARTH_RADIUS * c;
     }
+
+    /* ------------- coordinate transform ------------- */
 
     public double[] latLngToXY(double[] latLng) {
         return latLngToXY(latLng[0], latLng[1]);

@@ -1,8 +1,12 @@
 package main;
 
 import database.DBManager;
+import database.PreProcessing;
+import elements.BlockRaw;
+import elements.Building;
 import guo_cam.CameraController;
 import processing.core.PApplet;
+import render.JtsRender;
 
 import java.util.List;
 
@@ -24,27 +28,33 @@ public class Setup extends PApplet {
 
     /* ------------- setup ------------- */
 
-    private DBManager loader;
-    private List<Block> blocks;
+    private DBManager manager;
+    private PreProcessing preProcessing;
 
     private CameraController gcam;
+    private JtsRender jtsRender;
 
     public void setup() {
         this.gcam = new CameraController(this);
+        this.jtsRender = new JtsRender(this);
 
-
-        this.loader = new DBManager();
-
-        int[] test = new int[]{1, 2, 3, 4, 5};
-        this.blocks = loader.collectBlocks(test);
-        for (int i = 0; i < blocks.size(); i++) {
-            System.out.println(blocks.get(i).toString());
-        }
+        this.manager = new DBManager();
+        this.preProcessing = new PreProcessing(manager);
     }
 
     /* ------------- draw ------------- */
 
     public void draw() {
         background(255);
+        gcam.drawSystem(200);
+        pushMatrix();
+        for (int i = 0; i < preProcessing.getBlockList().size(); i++) {
+            jtsRender.drawGeometry(preProcessing.getBlockList().get(i).getShape());
+            for (Building b : preProcessing.getBlockList().get(i).getBuildings()) {
+                jtsRender.drawGeometry(b.getBaseShape());
+            }
+            translate(300, 0, 0);
+        }
+        popMatrix();
     }
 }

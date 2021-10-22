@@ -1,7 +1,8 @@
 package database;
 
-import main.Block;
-import main.Building;
+import elements.BlockRaw;
+import elements.BuildingRaw;
+import elements.CityRaw;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -50,9 +51,6 @@ public class DBManager {
 
     /**
      * shut down connection
-     *
-     * @param
-     * @return void
      */
     public void closeConnention() {
         try {
@@ -66,9 +64,6 @@ public class DBManager {
 
     /**
      * create a new table in the database
-     *
-     * @param
-     * @return void
      */
     public void createNewTable() {
         Connection c = null;
@@ -98,13 +93,37 @@ public class DBManager {
     /* ------------- data collector ------------- */
 
     /**
+     * collect cities in the database
+     *
+     * @param
+     * @return elements.CityRaw
+     */
+    public CityRaw collectCity() {
+        try {
+            stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("select name, lat, lon, ratio, st_astext(boundary), timestamp from city");
+
+            while (rs.next()) {
+                CityRaw cityRaw = new CityRaw();
+
+                cityRaw.setName(rs.getString(1).trim());
+                cityRaw.setRatio(rs.getDouble(4));
+                return cityRaw;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
      * collect all blocks in the database
      *
      * @param ids ids to collect
      * @return java.util.List<main.Block>
      */
-    public List<Block> collectBlocks(int[] ids) {
-        List<Block> blocks = new ArrayList<>();
+    public List<BlockRaw> collectBlocks(int[] ids) {
+        List<BlockRaw> blocks = new ArrayList<>();
         try {
             stmt = conn.createStatement();
             StringBuilder query = new StringBuilder(
@@ -119,9 +138,9 @@ public class DBManager {
             ResultSet rs = stmt.executeQuery(query.toString());
             WKTReader reader = new WKTReader();
             while (rs.next()) {
-                Block block = new Block();
+                BlockRaw block = new BlockRaw();
                 block.setID(rs.getLong(1));
-                block.setShape((LineString) reader.read(rs.getString(2)));
+                block.setGeom((LineString) reader.read(rs.getString(2)));
                 block.setArea(rs.getDouble(3));
                 block.setGSI(rs.getDouble(4));
                 block.setBuildingArea(rs.getDouble(5));
@@ -133,29 +152,14 @@ public class DBManager {
         return blocks;
     }
 
-    public Block collectBlockInfo(Integer id) {
-        try {
-            stmt = conn.createStatement();
-            String query = String.format("select id, a, gsi, b, \"T_num\", \"T_dense\", \"F_num\", \"F_diversity\" from blocks where blocks.id=%d", id);
-
-            ResultSet rs = stmt.executeQuery(query);
-            WKTReader reader = new WKTReader();
-            rs.next();
-            Block block = new Block();
-            block.setID(rs.getLong(1));
-            block.setShape((LineString) reader.read(rs.getString(2)));
-            block.setArea(rs.getDouble(3));
-            block.setGSI(rs.getDouble(4));
-            block.setBuildingArea(rs.getDouble(5));
-            return block;
-        } catch (SQLException | ParseException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public List<Building> collectBuildingInBlock(Integer id) {
-        List<Building> buildings = new ArrayList<>();
+    /**
+     * collect all buildings in the given block
+     *
+     * @param id block ID
+     * @return java.util.List<elements.Building>
+     */
+    public List<BuildingRaw> collectBuildingInBlock(Integer id) {
+        List<BuildingRaw> rawBuildings = new ArrayList<>();
         try {
             stmt = conn.createStatement();
             String query = String.format("select buildings.id, st_astext(buildings.geom), name, building_type, timestamp from buildings, blocks where blocks.id=%d and st_contains(ST_MakePolygon(blocks.geom), buildings.geom)", id);
@@ -163,20 +167,41 @@ public class DBManager {
             ResultSet rs = stmt.executeQuery(query);
             WKTReader reader = new WKTReader();
             while (rs.next()) {
-                Building building = new Building();
-                building.setOsmid(rs.getLong(1));
-                building.setShape((LineString) reader.read(rs.getString(2)));
-                if (rs.getString(3) != null) {
-                    building.setName(rs.getString(3).trim());
-                }
-                building.setType(rs.getString(4).trim());
-                buildings.add(building);
+                BuildingRaw b = new BuildingRaw();
+                b.setId(rs.getLong(1));
+                b.setGeom((LineString) reader.read(rs.getString(2)));
+                if (rs.getString(3) != null)
+                    b.setName(rs.getString(3).trim());
+                b.setBuilding_type(rs.getString(4).trim());
+
+                rawBuildings.add(b);
             }
         } catch (SQLException | ParseException e) {
             e.printStackTrace();
         }
-        return buildings;
+        return rawBuildings;
     }
+
+//    public BlockRaw collectBlockInfo(Integer id) {
+//        try {
+//            stmt = conn.createStatement();
+//            String query = String.format("select id, a, gsi, b, \"T_num\", \"T_dense\", \"F_num\", \"F_diversity\" from blocks where blocks.id=%d", id);
+//
+//            ResultSet rs = stmt.executeQuery(query);
+//            WKTReader reader = new WKTReader();
+//            rs.next();
+//            BlockRaw block = new BlockRaw();
+//            block.setID(rs.getLong(1));
+//            block.setLs((LineString) reader.read(rs.getString(2)));
+//            block.setArea(rs.getDouble(3));
+//            block.setGSI(rs.getDouble(4));
+//            block.setBuildingArea(rs.getDouble(5));
+//            return block;
+//        } catch (SQLException | ParseException e) {
+//            e.printStackTrace();
+//        }
+//        return null;
+//    }
 
     /* ------------- setter & getter ------------- */
 

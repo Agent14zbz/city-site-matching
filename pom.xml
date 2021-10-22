@@ -55,6 +55,11 @@
             <artifactId>camera</artifactId>
             <version>1.1</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.archialgo</groupId>
+            <artifactId>HE_Mesh-maven-lib</artifactId>
+            <version>2019.0.2</version>
+        </dependency>
     </dependencies>
 
     <repositories>
