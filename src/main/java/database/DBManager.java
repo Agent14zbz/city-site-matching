@@ -1,12 +1,18 @@
 package database;
 
+
 import elements.*;
+import org.apache.commons.lang3.StringUtils;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
+import org.locationtech.jts.io.WKTWriter;
+import transform.ZTransform;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -33,7 +39,6 @@ public class DBManager {
     /**
      * connect to database
      *
-     * @param
      * @return java.sql.Connection
      */
     private Connection connect() {
@@ -56,36 +61,6 @@ public class DBManager {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
-    }
-
-    /* ------------- connect ------------- */
-
-    /**
-     * create a new table in the database
-     */
-    public void createNewTable() {
-        Connection c = null;
-        Statement stmt = null;
-        try {
-            Class.forName("org.postgresql.Driver");
-            c = DriverManager.getConnection(DBConst.URL, DBConst.USERNAME, DBConst.PASSWORD);
-            System.out.println("Opened database successfully");
-
-            stmt = c.createStatement();
-            String sql = "CREATE TABLE TEST " +
-                    "(ID INT PRIMARY KEY     NOT NULL," +
-                    " NAME           TEXT    NOT NULL, " +
-                    " AGE            INT     NOT NULL, " +
-                    " ADDRESS        CHAR(50), " +
-                    " SALARY         REAL)";
-            stmt.executeUpdate(sql);
-            stmt.close();
-            c.close();
-        } catch (Exception e) {
-            System.err.println(e.getClass().getName() + ": " + e.getMessage());
-            System.exit(0);
-        }
-        System.out.println("Table created successfully");
     }
 
     /* ------------- data collector ------------- */
@@ -140,7 +115,6 @@ public class DBManager {
                 block.setGeomLatLon((LineString) reader.read(rs.getString(2)));
                 block.setArea(rs.getDouble(3));
                 block.setGSI(rs.getDouble(4));
-                block.setBuildingArea(rs.getDouble(5));
                 blocks.add(block);
             }
         } catch (SQLException | ParseException e) {
@@ -181,20 +155,157 @@ public class DBManager {
         return buildings;
     }
 
-    /* ------------- create new table ------------- */
-
-    public void createTable() {
+    /**
+     * collected original blocks from database for pre-processing
+     *
+     * @return java.util.List<elements.Block>
+     */
+    public List<Block> collectBlocksPre() {
+        List<Block> blocks = new ArrayList<>();
         try {
             stmt = conn.createStatement();
-            String sql = "CREATE TABLE student " +
-                    "(id INTEGER not NULL, " +
-                    " first VARCHAR(255), " +
-                    " last VARCHAR(255), " +
-                    " age INTEGER, " +
-                    " PRIMARY KEY ( id ))";
-            stmt.executeUpdate(sql);
+            String query = "select id, st_astext(geom), city, building_ids, area, gsi, fsi from blocks where blocks.valid_3d = " + true + ";";
 
-            System.out.println("created table");
+            ResultSet rs = stmt.executeQuery(query);
+            WKTReader reader = new WKTReader();
+
+            while (rs.next()) {
+                Block b = new Block();
+                b.setID(rs.getLong(1));
+                b.setGeomLatLon((LineString) reader.read(rs.getString(2)));
+                b.setCityName(rs.getString(3));
+                Array arr = rs.getArray(4);
+                List<Long> ids = Arrays.asList((Long[]) arr.getArray());
+                b.setBuildingIDs(ids);
+                b.setArea(rs.getDouble(5));
+                b.setGSI(rs.getDouble(6));
+                b.setFSI(rs.getDouble(7));
+
+                blocks.add(b);
+            }
+
+        } catch (SQLException | ParseException e) {
+            e.printStackTrace();
+        }
+        System.out.println(">>> collected " + blocks.size() + " blocks from database");
+        return blocks;
+    }
+
+    /**
+     * collected city ratios for each block from database for pre-processing
+     *
+     * @param cityName name of the city which the block belongs to
+     * @return double
+     */
+    public double collectCityRatioForBlockPre(String cityName) {
+        double ratio = 1;
+        try {
+            stmt = conn.createStatement();
+            String query = "select ratio from city where city.name = '" + cityName + "'";
+
+            ResultSet rs = stmt.executeQuery(query);
+            while (rs.next()) {
+                ratio = rs.getDouble(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return ratio;
+    }
+
+    /**
+     * collected original buildings of each block from database for pre-processing
+     *
+     * @param buildingIDs IDs of each building which belongs to the block
+     * @return java.util.List<elements.Building>
+     */
+    public List<Building> collectBuildingInBlockPre(List<Long> buildingIDs) {
+        List<Building> buildings = new ArrayList<>();
+        try {
+            stmt = conn.createStatement();
+            String query = "select id, st_astext(geom), name, building_type, s3db, timestamp from buildings where id = Any(Array[" + StringUtils.join(buildingIDs, ",") + "])";
+
+            ResultSet rs = stmt.executeQuery(query);
+            WKTReader reader = new WKTReader();
+            while (rs.next()) {
+                Building b = new Building();
+                b.setOsmid(rs.getLong(1));
+                b.setGeomLatLon((LineString) reader.read(rs.getString(2)));
+                if (rs.getString(3) != null)
+                    b.setName(rs.getString(3).trim());
+                b.setType(rs.getString(4).trim());
+
+
+                buildings.add(b);
+            }
+        } catch (SQLException | ParseException e) {
+            e.printStackTrace();
+        }
+        return buildings;
+    }
+
+    /* ------------- create new table ------------- */
+
+    /**
+     * update processed data to a new table
+     *
+     * @param blockList list of blocks
+     */
+    public void updateTable(List<Block> blockList) {
+        System.out.println(">>> starting update table");
+        try {
+            stmt = conn.createStatement();
+            StringBuilder sql = new StringBuilder(
+                    "INSERT INTO public.blocks_new"
+                            + "(id, geom, area, gsi, fsi, city_name, city_ratio, building_ids, shape, shape_descriptor, axes)"
+                            + "VALUES"
+            );
+
+            WKTWriter writer = new WKTWriter();
+
+            for (Block b : blockList) {
+                long id = b.getID();
+                String geom = writer.write(b.getGeomLatLon());
+                double area = b.getArea();
+                double gsi = b.getGSI();
+                double fsi = b.getFSI();
+                String city_name = b.getCityName();
+                double city_ratio = b.getCityRatio();
+                List<Long> building_ids = b.getBuildingIDs();
+                String shape = writer.write(ZTransform.PolygonToLineString(b.getShape()).get(0));
+                List<Double> shape_descriptor = b.getShapeDescriptor().getDescriptorAsList();
+                List<Double> axes = b.getShapeDescriptor().getAxesAsList();
+
+                sql.append("(")
+                        .append(id)
+                        .append(",").append("'")
+                        .append(geom).append("'")
+                        .append(",")
+                        .append(area)
+                        .append(",")
+                        .append(gsi)
+                        .append(",")
+                        .append(fsi)
+                        .append(",").append("'")
+                        .append(city_name).append("'")
+                        .append(",")
+                        .append(city_ratio)
+                        .append(",").append("'{")
+                        .append(StringUtils.join(building_ids, ",")).append("}'")
+                        .append(",").append("'")
+                        .append(shape).append("'")
+                        .append(",").append("'{")
+                        .append(StringUtils.join(shape_descriptor, ",")).append("}'")
+                        .append(",").append("'{")
+                        .append(StringUtils.join(axes, ",")).append("}'")
+                        .append(")")
+                        .append(",")
+                ;
+            }
+            sql.deleteCharAt(sql.length() - 1);
+            stmt.executeUpdate(sql.toString());
+
+            System.out.println(">>> updated table");
         } catch (SQLException e) {
             e.printStackTrace();
         }

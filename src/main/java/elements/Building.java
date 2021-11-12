@@ -31,16 +31,15 @@ public class Building {
     private long blockID;
 
     private Polygon baseShape;
-    private List<Polygon> faces;
 
-    // constant
-    private long storey;
-    private static final double storeyHeight = 3.6;
+//    private List<Polygon> faces;
+//    private long storey;
+//    private static final double storeyHeight = 3.6;
 
     /* ------------- constructor ------------- */
 
     public Building() {
-        this.storey = ZMath.randomInt(2, 7);
+//        this.storey = ZMath.randomInt(2, 7);
     }
 
     /* ------------- member function ------------- */
@@ -49,7 +48,6 @@ public class Building {
      * transform lat-lon coordinate to absolute coordinate (origin at the block centroid)
      *
      * @param ratio scale ratio
-     * @return double[][]
      */
     public void generateAbsShape(Point blockCentroid, double ratio) {
         // lat, lon
@@ -65,46 +63,49 @@ public class Building {
 
         Coordinate[] absCoords = new Coordinate[absPts.length];
         for (int i = 0; i < absCoords.length; i++) {
-            absCoords[i] = new Coordinate(absPts[i][0], absPts[i][1]);
+            absCoords[i] = new Coordinate(absPts[i][0], absPts[i][1], 0);
         }
         this.baseShape = ZFactory.jtsgf.createPolygon(absCoords);
     }
 
-    /**
-     * generate all faces of a building
-     *
-     * @param
-     * @return void
-     */
-    public void generateVolume() {
-        double height = storey * storeyHeight;
-        this.faces = new ArrayList<>();
-        faces.add(baseShape);
-        for (int i = 0; i < baseShape.getNumPoints() - 1; i++) {
-            Coordinate[] coords = new Coordinate[5];
-            coords[0] = baseShape.getCoordinates()[i];
-            coords[1] = baseShape.getCoordinates()[(i + 1) % (baseShape.getNumPoints() - 1)];
-            coords[2] = new Coordinate(coords[1].getX(), coords[1].getY(), height);
-            coords[3] = new Coordinate(coords[0].getX(), coords[0].getY(), height);
-            coords[4] = coords[0];
-            Polygon face = ZFactory.jtsgf.createPolygon(coords);
-            faces.add(face);
-        }
-        Coordinate[] topFaceCoords = new Coordinate[this.baseShape.getNumPoints()];
-        for (int i = 0; i < baseShape.getNumPoints(); i++) {
-            topFaceCoords[i] = new Coordinate(baseShape.getCoordinates()[i].getX(), baseShape.getCoordinates()[i].getY(), height);
-        }
-        Polygon topFace = ZFactory.jtsgf.createPolygon(topFaceCoords);
-        faces.add(topFace);
-    }
+//    /**
+//     * generate all faces of a building
+//     */
+//    public void generateVolume() {
+//        double height = storey * storeyHeight;
+//        this.faces = new ArrayList<>();
+//        faces.add(baseShape);
+//        for (int i = 0; i < baseShape.getNumPoints() - 1; i++) {
+//            Coordinate[] coords = new Coordinate[5];
+//            coords[0] = baseShape.getCoordinates()[i];
+//            coords[1] = baseShape.getCoordinates()[(i + 1) % (baseShape.getNumPoints() - 1)];
+//            coords[2] = new Coordinate(coords[1].getX(), coords[1].getY(), height);
+//            coords[3] = new Coordinate(coords[0].getX(), coords[0].getY(), height);
+//            coords[4] = coords[0];
+//            Polygon face = ZFactory.jtsgf.createPolygon(coords);
+//            faces.add(face);
+//        }
+//        Coordinate[] topFaceCoords = new Coordinate[this.baseShape.getNumPoints()];
+//        for (int i = 0; i < baseShape.getNumPoints(); i++) {
+//            topFaceCoords[i] = new Coordinate(baseShape.getCoordinates()[i].getX(), baseShape.getCoordinates()[i].getY(), height);
+//        }
+//        Polygon topFace = ZFactory.jtsgf.createPolygon(topFaceCoords);
+//        faces.add(topFace);
+//    }
 
-    public List<Polygon> transform(ZJtsTransform transform) {
-        List<Polygon> newFaces = new ArrayList<>();
-        for (Polygon f : faces) {
-            newFaces.add((Polygon) transform.applyToGeometry3D(f));
-        }
-        return newFaces;
-    }
+//    /**
+//     * transform by giving matrix
+//     *
+//     * @param transform transform matrix
+//     * @return java.util.List<org.locationtech.jts.geom.Polygon>
+//     */
+//    public List<Polygon> transform(ZJtsTransform transform) {
+//        List<Polygon> newFaces = new ArrayList<>();
+//        for (Polygon f : faces) {
+//            newFaces.add((Polygon) transform.applyToGeometry3D(f));
+//        }
+//        return newFaces;
+//    }
 
     /* ------------- setter & getter ------------- */
 
@@ -132,17 +133,18 @@ public class Building {
         this.baseShape = baseShape;
     }
 
-    public void setStorey(long storey) {
-        this.storey = storey;
-    }
+//    public void setStorey(long storey) {
+//        this.storey = storey;
+//    }
 
     public Polygon getBaseShape() {
         return baseShape;
     }
 
-    public List<Polygon> getFaces() {
-        return faces;
-    }
+
+//    public List<Polygon> getFaces() {
+//        return faces;
+//    }
 
     /* ------------- draw ------------- */
 
