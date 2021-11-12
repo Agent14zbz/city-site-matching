@@ -1,6 +1,7 @@
 package elements;
 
 import advancedGeometry.ZShapeDescriptor;
+import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import wblut.geom.WB_Polygon;
 
@@ -13,16 +14,17 @@ import wblut.geom.WB_Polygon;
  * @time 10:53
  */
 public class BlockEmpty {
-
+    private Polygon shape;
+    private Point centroid;
+    private double area;
     private ZShapeDescriptor shapeDescriptor;
 
     /* ------------- constructor ------------- */
 
     public BlockEmpty(Polygon polygon) {
-        this.shapeDescriptor = new ZShapeDescriptor(polygon);
-    }
-
-    public BlockEmpty(WB_Polygon polygon) {
+        this.shape = polygon;
+        this.centroid = polygon.getCentroid();
+        this.area = polygon.getArea();
         this.shapeDescriptor = new ZShapeDescriptor(polygon);
     }
 
@@ -31,7 +33,21 @@ public class BlockEmpty {
 
     /* ------------- setter & getter ------------- */
 
+    public Polygon getShape() {
+        return shape;
+    }
 
+    public Point getCentroid() {
+        return centroid;
+    }
+
+    public double getArea() {
+        return area;
+    }
+
+    public ZShapeDescriptor getShapeDescriptor() {
+        return shapeDescriptor;
+    }
 
     /* ------------- draw ------------- */
 }
