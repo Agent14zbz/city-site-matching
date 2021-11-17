@@ -1,9 +1,9 @@
 package elements;
 
 import advancedGeometry.ZShapeDescriptor;
+import math.ZMath;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
-import wblut.geom.WB_Polygon;
 
 /**
  * description
@@ -19,6 +19,9 @@ public class BlockEmpty {
     private double area;
     private ZShapeDescriptor shapeDescriptor;
 
+    private double targetGSI;
+    private double targetFSI;
+
     /* ------------- constructor ------------- */
 
     public BlockEmpty(Polygon polygon) {
@@ -26,6 +29,9 @@ public class BlockEmpty {
         this.centroid = polygon.getCentroid();
         this.area = polygon.getArea();
         this.shapeDescriptor = new ZShapeDescriptor(polygon);
+
+        this.targetGSI = ZMath.random(0.2, 0.7);
+        this.targetFSI = ZMath.random(0.4, 6);
     }
 
     /* ------------- member function ------------- */
@@ -47,6 +53,14 @@ public class BlockEmpty {
 
     public ZShapeDescriptor getShapeDescriptor() {
         return shapeDescriptor;
+    }
+
+    public double getTargetGSI() {
+        return targetGSI;
+    }
+
+    public double getTargetFSI() {
+        return targetFSI;
     }
 
     /* ------------- draw ------------- */

@@ -2,15 +2,12 @@ package elements;
 
 import advancedGeometry.ZShapeDescriptor;
 import basicGeometry.ZFactory;
-import basicGeometry.ZPoint;
-import math.ZGeoMath;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import utils.GeoMath;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,21 +21,18 @@ import java.util.List;
 public class Block {
     private long ID;
     private LineString geomLatLon;
-    private String cityName;
-    private List<Long> buildingIDs;
-
     private double area;
     private double GSI;
     private double FSI;
-
+    private String cityName;
     private double cityRatio;
-    private List<Building> buildings;
-
-    private Point centroidLatLon;
-
+    private List<Long> buildingIDs;
     private Polygon shape;
-    private Point centroid;
     private ZShapeDescriptor shapeDescriptor;
+
+    private List<Building> buildings;
+    private Point centroidLatLon;
+    private Point centroid;
 
     /* ------------- constructor ------------- */
 
@@ -46,13 +40,7 @@ public class Block {
 
     }
 
-    public Block(CityRaw cityRaw) {
-        this.cityName = cityRaw.getName();
-
-        initProperties();
-    }
-
-    /* ------------- member function ------------- */
+    /* ------------- member function: pre-processing ------------- */
 
     /**
      * transform lat-lon coordinate to absolute coordinate (origin at the block centroid)
@@ -84,6 +72,15 @@ public class Block {
         this.shapeDescriptor = new ZShapeDescriptor(shape);
     }
 
+    /* ------------- member function: block matching ------------- */
+
+    /**
+     * calculate geometry properties from shape
+     */
+    public void initProperties2() {
+        this.centroid = shape.getCentroid();
+    }
+
     /* ------------- setter & getter ------------- */
 
     public void setID(long ID) {
@@ -93,14 +90,6 @@ public class Block {
     public void setGeomLatLon(LineString geomLatLon) {
         this.geomLatLon = geomLatLon;
         this.centroidLatLon = geomLatLon.getCentroid();
-    }
-
-    public void setCityName(String cityName) {
-        this.cityName = cityName;
-    }
-
-    public void setBuildingIDs(List<Long> buildingIDs) {
-        this.buildingIDs = buildingIDs;
     }
 
     public void setArea(double area) {
@@ -115,12 +104,28 @@ public class Block {
         this.FSI = FSI;
     }
 
+    public void setCityName(String cityName) {
+        this.cityName = cityName;
+    }
+
     public void setCityRatio(double cityRatio) {
         this.cityRatio = cityRatio;
     }
 
+    public void setBuildingIDs(List<Long> buildingIDs) {
+        this.buildingIDs = buildingIDs;
+    }
+
     public void setBuildings(List<Building> buildings) {
         this.buildings = buildings;
+    }
+
+    public void setShape(Polygon shape) {
+        this.shape = shape;
+    }
+
+    public void setShapeDescriptor(ZShapeDescriptor shapeDescriptor) {
+        this.shapeDescriptor = shapeDescriptor;
     }
 
     public long getID() {

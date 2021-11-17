@@ -1,18 +1,13 @@
 package elements;
 
 import basicGeometry.ZFactory;
-import basicGeometry.ZPoint;
-import math.ZMath;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
-import transform.ZJtsTransform;
-import transform.ZTransform;
 import utils.GeoMath;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 /**
  * description
@@ -27,9 +22,10 @@ public class Building {
     private LineString geomLatLon;
     private String name = "";
     private String type;
+    private String s3db;
+    private Date timestamp;
 
     private long blockID;
-
     private Polygon baseShape;
 
 //    private List<Polygon> faces;
@@ -47,12 +43,12 @@ public class Building {
     /**
      * transform lat-lon coordinate to absolute coordinate (origin at the block centroid)
      *
-     * @param ratio scale ratio
+     * @param cityRatio scale ratio
      */
-    public void generateAbsShape(Point blockCentroid, double ratio) {
+    public void generateAbsShape(Point blockCentroidLatLon, double cityRatio) {
         // lat, lon
-        GeoMath geoMath = new GeoMath(blockCentroid.getY(), blockCentroid.getX());
-        geoMath.setRatio(ratio);
+        GeoMath geoMath = new GeoMath(blockCentroidLatLon.getY(), blockCentroidLatLon.getX());
+        geoMath.setRatio(cityRatio);
 
         Coordinate[] coords = geomLatLon.getCoordinates();
         double[][] absPts = new double[coords.length][];
@@ -123,6 +119,14 @@ public class Building {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public void setS3db(String s3db) {
+        this.s3db = s3db;
+    }
+
+    public void setTimestamp(Date timestamp) {
+        this.timestamp = timestamp;
     }
 
     public void setBlockID(long blockID) {

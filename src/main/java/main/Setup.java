@@ -4,7 +4,6 @@ import basicGeometry.ZPoint;
 import database.DBManager;
 import elements.Block;
 import elements.BlockEmpty;
-import elements.Building;
 import guo_cam.CameraController;
 import org.locationtech.jts.geom.Polygon;
 import processing.core.PApplet;
@@ -37,6 +36,7 @@ public class Setup extends PApplet {
     private MatchManager matchManager;
     private boolean drawEmpty = false;
     private boolean drawResult = false;
+    private boolean drawbest5 = false;
 
     private CameraController gcam;
     private JtsRender jtsRender;
@@ -50,9 +50,7 @@ public class Setup extends PApplet {
 
         this.matchManager = new MatchManager();
 
-        textSize(20);
-        long l=1;
-        System.out.println(Long.toString(l));
+        textSize(12);
     }
 
     /* ------------- draw ------------- */
@@ -81,83 +79,193 @@ public class Setup extends PApplet {
 //            }
 //        }
 
+        // draw empty blocks and axes
         if (drawEmpty) {
             pushStyle();
             strokeWeight(3);
             stroke(255, 0, 0);
-            for (BlockEmpty e : matchManager.getBlockEmpties()) {
+            for (int i = 0; i < matchManager.getBlockEmpties().size(); i++) {
+                BlockEmpty e = matchManager.getBlockEmpties().get(i);
+                fill(0);
+                text(i, (float) e.getCentroid().getX(), (float) e.getCentroid().getY());
+                noFill();
                 jtsRender.drawGeometry(e.getShape());
-                ZPoint[] polyAxesVecs = e.getShapeDescriptor().getAxes();
+                ZPoint[] polyAxesVecs = e.getShapeDescriptor().getAxesNew();
 
                 pushStyle();
+                strokeWeight(1.5f);
                 stroke(255, 0, 0);
                 polyAxesVecs[0].displayAsVector(
                         this,
                         new ZPoint(e.getCentroid()),
-                        50,
-                        5
+                        30,
+                        0
+                );
+                polyAxesVecs[0].displayAsVector(
+                        this,
+                        new ZPoint(e.getCentroid()),
+                        -30,
+                        0
                 );
                 stroke(0, 255, 0);
                 polyAxesVecs[1].displayAsVector(
                         this,
                         new ZPoint(e.getCentroid()),
-                        50,
-                        5
+                        15,
+                        0
+                );
+                polyAxesVecs[1].displayAsVector(
+                        this,
+                        new ZPoint(e.getCentroid()),
+                        -15,
+                        0
                 );
                 popStyle();
             }
             popStyle();
         }
 
+        // draw match result to each empty block
         if (drawResult) {
             pushStyle();
             strokeWeight(1);
             stroke(0);
+            fill(200);
             for (List<Polygon> list : matchManager.getBuildingResults()) {
                 for (Polygon p : list) {
-                    jtsRender.drawGeometry3D(p);
+                    jtsRender.drawGeometry(p);
                 }
             }
             strokeWeight(2);
-            stroke(0, 0, 255);
-            for (Polygon p : matchManager.getBlockResults()) {
-                jtsRender.drawGeometry(p);
+            noFill();
+            stroke(0);
+            for (int i = 0; i < matchManager.getBlockResults().size(); i++) {
+                Polygon p = matchManager.getBlockResults().get(i);
+//                jtsRender.drawGeometry(p);
+                ZPoint[] bestAxes = matchManager.getBestAxes().get(i);
+                pushStyle();
+                strokeWeight(1);
+                stroke(0, 0, 255);
+                bestAxes[0].displayAsVector(
+                        this,
+                        new ZPoint(p.getCentroid()),
+                        30,
+                        0
+                );
+                bestAxes[0].displayAsVector(
+                        this,
+                        new ZPoint(p.getCentroid()),
+                        -30,
+                        0
+                );
+                stroke(0, 255, 255);
+                bestAxes[1].displayAsVector(
+                        this,
+                        new ZPoint(p.getCentroid()),
+                        15,
+                        0
+                );
+                bestAxes[1].displayAsVector(
+                        this,
+                        new ZPoint(p.getCentroid()),
+                        -15,
+                        0
+                );
+                popStyle();
             }
             popStyle();
         }
-//        // existing blocks from database
-//        pushMatrix();
-//        for (int i = 0; i < preProcessing.getBlockList().size(); i++) {
+
+        // draw best 5 results for each empty block
+//        if (drawbest5) {
 //            pushStyle();
-//            strokeWeight(3);
-//            jtsRender.drawGeometry(preProcessing.getBlockList().get(i).getShape());
-//            strokeWeight(1);
-//            for (Building b : preProcessing.getBlockList().get(i).getBuildings()) {
-//                for (Polygon p : b.getFaces()) {
-//                    jtsRender.drawPolygon3D(p);
+//            pushMatrix();
+//            translate(0, 400);
+//            strokeWeight(2);
+//            for (int i = 0; i < matchManager.getEmptiesOrigin().size(); i++) {
+//                stroke(255, 0, 0);
+//                Polygon empty = matchManager.getEmptiesOrigin().get(i);
+//                fill(0);
+//                text(i, (float) empty.getCentroid().getX(), (float) empty.getCentroid().getY());
+//                noFill();
+//                jtsRender.drawGeometry(empty);
+//                stroke(0);
+//                for (int j = 0; j < matchManager.getBest5().get(i).size(); j++) {
+//                    translate(150, 0);
+//                    Block e = matchManager.getBest5().get(i).get(j);
+//                    jtsRender.drawGeometry(matchManager.getBest5().get(i).get(j).getShape());
+//                    ZPoint[] polyAxesVecs = e.getShapeDescriptor().getAxesNew();
+//
+//                    pushStyle();
+//                    strokeWeight(1);
+//                    stroke(0, 0, 255);
+//                    polyAxesVecs[0].displayAsVector(
+//                            this,
+//                            new ZPoint(e.getCentroid()),
+//                            30,
+//                            0
+//                    );
+//                    polyAxesVecs[0].displayAsVector(
+//                            this,
+//                            new ZPoint(e.getCentroid()),
+//                            -30,
+//                            0
+//                    );
+//                    stroke(0, 255, 255);
+//                    polyAxesVecs[1].displayAsVector(
+//                            this,
+//                            new ZPoint(e.getCentroid()),
+//                            15,
+//                            0
+//                    );
+//                    polyAxesVecs[1].displayAsVector(
+//                            this,
+//                            new ZPoint(e.getCentroid()),
+//                            -15,
+//                            0
+//                    );
+//                    popStyle();
 //                }
+//                translate(-750, 200);
 //            }
-//            translate(300, 0, 0);
 //            popStyle();
+//            popMatrix();
 //        }
-//        popMatrix();
     }
 
     public void keyPressed() {
-        if (key == '3') {
+        if (key == '4') {
             preProcessing.initBlocks(dbManager);
             this.drawBlock = true;
         }
-        if (key == '4') {
+        if (key == '5') {
             preProcessing.updateDatabase(dbManager);
         }
+        if (key == '6') {
+            preProcessing.getBlocksToUpdate(dbManager);
+        }
+        if (key == '7') {
+            preProcessing.updateSDAxes(dbManager);
+        }
+        if (key == '8') {
+            preProcessing.updateAxes(dbManager);
+        }
+
+
         if (key == '1') {
-            matchManager.load(dbManager);
+            matchManager.loadEmpty(dbManager);
             drawEmpty = true;
         }
         if (key == '2') {
-            matchManager.matchTest();
+            matchManager.matchTest2(dbManager);
             drawResult = true;
+            drawbest5 = true;
         }
+//        if (key == '3') {
+//            matchManager.matchTest(dbManager);
+//            drawResult = true;
+//            drawbest5 = true;
+//        }
+
     }
 }
