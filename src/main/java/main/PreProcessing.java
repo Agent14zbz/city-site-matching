@@ -1,8 +1,8 @@
 package main;
 
-import com.sun.deploy.util.StringUtils;
 import database.DBManager;
-import elements.*;
+import elements.Block;
+import elements.Building;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -19,8 +19,7 @@ import java.util.List;
  */
 public class PreProcessing {
     private List<Block> blockList;
-
-    // utils
+    private List<Block> blocksToUpdate;
 
     /* ------------- constructor ------------- */
 
@@ -111,12 +110,16 @@ public class PreProcessing {
 //            block.initProperties();
 //        }
 
-        // create new table to store new block properties
-//        manager.createTable();
+
     }
 
     /* ------------- member function ------------- */
 
+    /**
+     * collect all raw blocks for pre-processing
+     *
+     * @param dbManager database manager
+     */
     public void initBlocks(DBManager dbManager) {
         // collect all blocks from database
         this.blockList = dbManager.collectBlocksPre();
@@ -142,9 +145,60 @@ public class PreProcessing {
         }
     }
 
+    /**
+     * create a new table to store data
+     *
+     * @param dbManager database manager
+     */
     public void updateDatabase(DBManager dbManager) {
-        dbManager.updateTable(blockList);
+        dbManager.updateNewTable(blockList);
     }
+
+    /**
+     * collect all blocks for updating
+     *
+     * @param dbManager database manager
+     */
+    public void getBlocksToUpdate(DBManager dbManager) {
+        this.blocksToUpdate = dbManager.collectBlockForUpdate();
+    }
+
+    /**
+     * update shape descriptors and new axes to database
+     *
+     * @param dbManager database manager
+     */
+    public void updateSDAxes(DBManager dbManager) {
+        for (Block b : blocksToUpdate) {
+            b.initProperties();
+            dbManager.updateTableNewAxes(
+                    b.getID(),
+                    b.getShapeDescriptor().getDescriptorAsList(),
+                    b.getShapeDescriptor().getAxesNewAsList()
+            );
+
+            System.out.println(">>> updated shape descriptor and axes for block " + b.getID());
+        }
+    }
+
+    /**
+     * update axes to database
+     *
+     * @param dbManager database manager
+     */
+    public void updateAxes(DBManager dbManager) {
+        for (Block b : blocksToUpdate) {
+            b.initProperties();
+            dbManager.updateTableAxes(
+                    b.getID(),
+                    b.getShapeDescriptor().getAxesAsList()
+            );
+
+            System.out.println(">>> updated shape descriptor and axes for block " + b.getID());
+        }
+    }
+
+    /* ------------- temp: area statistic ------------- */
 
     private void writeAreaDataTemp() {
         // temp: area
@@ -189,9 +243,4 @@ public class PreProcessing {
 
     /* ------------- setter & getter ------------- */
 
-    public List<Block> getBlockList() {
-        return blockList;
-    }
-
-    /* ------------- draw ------------- */
 }
