@@ -2,7 +2,6 @@ package main;
 
 import basicGeometry.ZPoint;
 import database.DBManager;
-import elements.Block;
 import elements.BlockEmpty;
 import guo_cam.CameraController;
 import org.locationtech.jts.geom.Polygon;
@@ -24,7 +23,7 @@ public class Setup extends PApplet {
     /* ------------- settings ------------- */
 
     public void settings() {
-        size(1000, 1000, P3D);
+        size(1900, 1000, P3D);
     }
 
     /* ------------- setup ------------- */
@@ -82,16 +81,16 @@ public class Setup extends PApplet {
         // draw empty blocks and axes
         if (drawEmpty) {
             pushStyle();
-            strokeWeight(3);
-            stroke(255, 0, 0);
+            strokeWeight(1);
+            stroke(0);
             for (int i = 0; i < matchManager.getBlockEmpties().size(); i++) {
                 BlockEmpty e = matchManager.getBlockEmpties().get(i);
-                fill(0);
+                fill(255, 0, 0);
                 text(i, (float) e.getCentroid().getX(), (float) e.getCentroid().getY());
                 noFill();
                 jtsRender.drawGeometry(e.getShape());
-                ZPoint[] polyAxesVecs = e.getShapeDescriptor().getAxesNew();
 
+                ZPoint[] polyAxesVecs = e.getShapeDescriptor().getAxesOBB();
                 pushStyle();
                 strokeWeight(1.5f);
                 stroke(255, 0, 0);
@@ -130,7 +129,7 @@ public class Setup extends PApplet {
             pushStyle();
             strokeWeight(1);
             stroke(0);
-            fill(200);
+            fill(0);
             for (List<Polygon> list : matchManager.getBuildingResults()) {
                 for (Polygon p : list) {
                     jtsRender.drawGeometry(p);
@@ -138,10 +137,10 @@ public class Setup extends PApplet {
             }
             strokeWeight(2);
             noFill();
-            stroke(0);
+            stroke(0, 0, 255);
             for (int i = 0; i < matchManager.getBlockResults().size(); i++) {
                 Polygon p = matchManager.getBlockResults().get(i);
-//                jtsRender.drawGeometry(p);
+                jtsRender.drawGeometry(p);
                 ZPoint[] bestAxes = matchManager.getBestAxes().get(i);
                 pushStyle();
                 strokeWeight(1);
@@ -234,6 +233,7 @@ public class Setup extends PApplet {
     }
 
     public void keyPressed() {
+        // pre-processing
         if (key == '4') {
             preProcessing.initBlocks(dbManager);
             this.drawBlock = true;
@@ -250,10 +250,20 @@ public class Setup extends PApplet {
         if (key == '8') {
             preProcessing.updateAxes(dbManager);
         }
+        if (key == '9') {
+            preProcessing.getBlocksToUpdate2(dbManager);
+        }
+        if (key == '0') {
+            preProcessing.updateShapeAxesOBB(dbManager);
+        }
 
-
+        // match tests
+        if (key == '`') {
+            matchManager.loadEmptyTXT();
+            drawEmpty = true;
+        }
         if (key == '1') {
-            matchManager.loadEmpty(dbManager);
+            matchManager.loadEmpty();
             drawEmpty = true;
         }
         if (key == '2') {
@@ -267,5 +277,12 @@ public class Setup extends PApplet {
 //            drawbest5 = true;
 //        }
 
+        // display controls
+        if (key == 'q') {
+            drawEmpty = !drawEmpty;
+        }
+        if (key == 'w') {
+            drawResult = !drawBlock;
+        }
     }
 }

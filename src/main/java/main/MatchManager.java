@@ -1,6 +1,7 @@
 package main;
 
 import advancedGeometry.ZShapeDescriptor;
+import basicGeometry.ZFactory;
 import basicGeometry.ZPoint;
 import database.DBManager;
 import elements.Block;
@@ -10,13 +11,16 @@ import elements.Building;
 import igeo.ICurve;
 import igeo.IG;
 import math.ZMath;
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Polygon;
 import transform.ZJtsTransform;
 import transform.ZTransform;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -45,22 +49,70 @@ public class MatchManager {
 
     /* ------------- member function ------------- */
 
-    public void loadEmpty(DBManager dbManager) {
+    /**
+     * load empty block from .3dm
+     */
+    public void loadEmpty() {
         this.blockEmpties = new ArrayList<>();
-
+        List<Double> areas = new ArrayList<>();
         // load empty blocks
         System.out.println(">>>> start collecting empty blocks");
         IG.init();
-        IG.open("./src/main/resources/20211107test.3dm");
+        IG.open("./src/main/resources/20211121test.3dm");
         ICurve[] polyLines = IG.layer("emptyBlock").curves();
         for (int i = 0; i < polyLines.length; i++) {
             Polygon e = (Polygon) ZTransform.ICurveToJts(polyLines[i]);
             if (e != null) {
-                blockEmpties.add(new BlockEmpty(e));
+                BlockEmpty bm = new BlockEmpty(e);
+                blockEmpties.add(bm);
+                areas.add(bm.getArea());
             }
 
         }
         System.out.println(">>> empty blocks: " + blockEmpties.size());
+        System.out.println(Collections.max(areas));
+        System.out.println(Collections.min(areas));
+    }
+
+    /**
+     * load empty block from .txt
+     */
+    public void loadEmptyTXT() {
+        this.blockEmpties = new ArrayList<>();
+        List<Double> areas = new ArrayList<>();
+        try {
+            File f = new File("./src/main/resources/polygons.txt");
+            BufferedReader reader = new BufferedReader(new FileReader(f));
+            String line = reader.readLine();
+
+            while (line != null) {
+                String[] spString = line.split("\\s+");
+                Coordinate[] coords = new Coordinate[Math.round(spString.length * 0.5f) + 1];
+                for (int i = 0; i < coords.length - 1; i++) {
+                    coords[i] = new Coordinate(
+                            Double.parseDouble(spString[i * 2]) * 2.4,
+                            Double.parseDouble(spString[i * 2 + 1]) * 2.4
+                    );
+                }
+                coords[coords.length - 1] = coords[0];
+                BlockEmpty bm = new BlockEmpty(ZFactory.jtsgf.createPolygon(coords));
+                areas.add(bm.getArea());
+                blockEmpties.add(bm);
+                line = reader.readLine();
+            }
+            System.out.println(">>> empty blocks: " + blockEmpties.size());
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        double[] as = new double[areas.size()];
+        for (int i = 0; i < as.length; i++) {
+            as[i] = areas.get(i);
+        }
+        System.out.println(ZMath.average(as));
+        System.out.println(Collections.max(areas));
+        System.out.println(Collections.min(areas));
     }
 
     /**
@@ -80,9 +132,10 @@ public class MatchManager {
         this.emptiesOrigin = new ArrayList<>();
         this.best5 = new ArrayList<>();
         // load block match samples refer to empty block properties
+        int count = 0;
         for (int i = 0; i < blockEmpties.size(); i++) {
             BlockEmpty empty = blockEmpties.get(i);
-            double[] areaRange = new double[]{empty.getArea() * 0.8, empty.getArea() * 1.2};
+            double[] areaRange = new double[]{empty.getArea() * 0.9, empty.getArea() * 1.1};
             double[] gsiRange = new double[]{empty.getTargetGSI() * 0.75, empty.getTargetGSI() * 1.25};
             double[] fsiRange = new double[]{empty.getTargetFSI() * 0.75, empty.getTargetFSI() * 1.25};
             List<BlockMatch> blockMatchList = dbManager.collectBlocksInfo(
@@ -108,14 +161,14 @@ public class MatchManager {
                 long id = bestMatch.getId();
                 Block best = dbManager.collectBlockResult(id);
 
-                List<Block> bests = new ArrayList<>();
-                for (int j = 0; j < min.length; j++) {
-                    BlockMatch best5s = blockMatchList.get(min[j]);
-                    long best5id = best5s.getId();
-                    Block result = dbManager.collectBlockResult(best5id);
-                    bests.add(result);
-                }
-                best5.add(bests);
+//                List<Block> bests = new ArrayList<>();
+//                for (int j = 0; j < min.length; j++) {
+//                    BlockMatch best5s = blockMatchList.get(min[j]);
+//                    long best5id = best5s.getId();
+//                    Block result = dbManager.collectBlockResult(best5id);
+//                    bests.add(result);
+//                }
+//                best5.add(bests);
 
                 // compare 4 cases: 1.default  2.rotate 180  3.mirror  4.mirror & rotate 180
                 double emptyArea = empty.getArea();
@@ -123,15 +176,23 @@ public class MatchManager {
                 double scaleRatio = Math.sqrt(emptyArea / bestArea);
 
                 ZPoint emptyCentroid = new ZPoint(empty.getCentroid());
-                ZPoint bestCentroid = new ZPoint(best.getCentroid());
+                ZPoint bestCentroid = new ZPoint(0, 0);
                 ZPoint moveVec = emptyCentroid.sub(bestCentroid);
 
-                ZPoint emptyAxes = empty.getShapeDescriptor().getAxesNew()[0];
-                ZPoint bestAxes = best.getShapeDescriptor().getAxesNew()[0];
+//                ZPoint emptyAxes = empty.getShapeDescriptor().getAxesNew()[0];
+//                ZPoint bestAxes = best.getShapeDescriptor().getAxesNew()[0];
+//                double angle = bestAxes.angleWith(emptyAxes);
+//                this.bestAxes.add(new ZPoint[]{
+//                        bestAxes.rotate2D(Math.PI * (angle / 180)),
+//                        best.getShapeDescriptor().getAxesNew()[1].rotate2D(Math.PI * (angle / 180))
+//                });
+
+                ZPoint emptyAxes = empty.getShapeDescriptor().getAxesOBB()[0];
+                ZPoint bestAxes = best.getShapeDescriptor().getAxesOBB()[0];
                 double angle = bestAxes.angleWith(emptyAxes);
                 this.bestAxes.add(new ZPoint[]{
                         bestAxes.rotate2D(Math.PI * (angle / 180)),
-                        best.getShapeDescriptor().getAxesNew()[1].rotate2D(Math.PI * (angle / 180))
+                        best.getShapeDescriptor().getAxesOBB()[1].rotate2D(Math.PI * (angle / 180))
                 });
 
                 ZJtsTransform transform1 = new ZJtsTransform();
@@ -158,7 +219,7 @@ public class MatchManager {
                 transform4.addScale2D(scaleRatio);
                 transform4.addRotateAboutOrigin2D(Math.PI * (angle / 180));
                 transform4.addRotateAboutOrigin2D(Math.PI);
-                transform4.addRotateAboutOrigin2D(Math.PI);
+                transform4.addReflect2D(new ZPoint(0, 0), bestAxes);
                 transform4.addTranslate2D(moveVec);
                 Polygon rotateMirror4 = (Polygon) transform4.applyToGeometry2D(best.getShape());
 
@@ -174,8 +235,8 @@ public class MatchManager {
                         inter3.getArea() / emptyArea,
                         inter4.getArea() / emptyArea
                 };
-                System.out.println(">>> empty block " + i + " intersection ratio: ");
                 int maxInter = ZMath.getMaxIndex(interRatio);
+                System.out.println(">>> empty block " + i + " intersection ratio: " + interRatio[maxInter]);
 
                 ZJtsTransform bestMatchTransform = null;
                 switch (maxInter) {
@@ -195,7 +256,7 @@ public class MatchManager {
 
                 // if the intersection ratio is still lower than standard, rotate to find the best direction
                 double maxInterRatio = interRatio[maxInter];
-                if (maxInterRatio < 0.9) {
+                if (maxInterRatio < 0.92) {
                     double[] ratioAfterRotate = new double[50];
                     double angleStep = Math.PI / 25;
                     for (int j = 0; j < 50; j++) {
@@ -206,6 +267,7 @@ public class MatchManager {
                     int maxRatioAfterRotate = ZMath.getMaxIndex(ratioAfterRotate);
                     bestMatchTransform.addRotateAboutPoint2D(maxRatioAfterRotate * angleStep, emptyCentroid);
                     System.out.println(">>>> rotate optimized for block " + i + "   before: " + maxInterRatio + "  after: " + ratioAfterRotate[maxRatioAfterRotate]);
+                    count++;
                 }
 
                 // get building bases
@@ -227,12 +289,13 @@ public class MatchManager {
                 }
                 buildingResults.add(bases);
 
-                System.out.println("matched success for empty block " + i);
+                System.out.println(">> matched success for empty block " + i);
             }
         }
 
         long endTime = System.currentTimeMillis();
         System.out.println("程序运行时间：" + (endTime - startTime) + " ms");
+        System.out.println(count);
     }
 
 

@@ -6,7 +6,6 @@ import elements.Building;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -139,7 +138,7 @@ public class PreProcessing {
             block.setBuildings(buildings);
 
             block.generateAbsShape();
-            block.initProperties();
+            block.initShapeDescriptor();
 
             System.out.println(">>> " + i + " blocks processed");
         }
@@ -164,20 +163,29 @@ public class PreProcessing {
     }
 
     /**
+     * collect all blocks for updating 2
+     *
+     * @param dbManager database manager
+     */
+    public void getBlocksToUpdate2(DBManager dbManager) {
+        this.blocksToUpdate = dbManager.collectBlockForUpdate2();
+    }
+
+    /**
      * update shape descriptors and new axes to database
      *
      * @param dbManager database manager
      */
     public void updateSDAxes(DBManager dbManager) {
         for (Block b : blocksToUpdate) {
-            b.initProperties();
-            dbManager.updateTableNewAxes(
+            b.initShapeDescriptor();
+            dbManager.updateTableSDAxesNew(
                     b.getID(),
                     b.getShapeDescriptor().getDescriptorAsList(),
                     b.getShapeDescriptor().getAxesNewAsList()
             );
 
-            System.out.println(">>> updated shape descriptor and axes for block " + b.getID());
+            System.out.println(">>> updated shape_descriptor and axes_new for block " + b.getID());
         }
     }
 
@@ -188,13 +196,32 @@ public class PreProcessing {
      */
     public void updateAxes(DBManager dbManager) {
         for (Block b : blocksToUpdate) {
-            b.initProperties();
+            b.initShapeDescriptor();
             dbManager.updateTableAxes(
                     b.getID(),
                     b.getShapeDescriptor().getAxesAsList()
             );
 
-            System.out.println(">>> updated shape descriptor and axes for block " + b.getID());
+            System.out.println(">>> updated axes for block " + b.getID());
+        }
+    }
+
+    /**
+     * update shape and axes_obb to database
+     *
+     * @param dbManager database manager
+     */
+    public void updateShapeAxesOBB(DBManager dbManager) {
+        for (Block b : blocksToUpdate) {
+            b.generateAbsShape();
+            b.initShapeDescriptor();
+            dbManager.updateTableAxesOBB(
+                    b.getID(),
+                    b.getShapeDescriptor().getAxesOBBAsList(),
+                    b.getShape()
+            );
+
+            System.out.println(">>> updated shape and axes_obb for block " + b.getID());
         }
     }
 

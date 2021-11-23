@@ -2,12 +2,15 @@ package elements;
 
 import advancedGeometry.ZShapeDescriptor;
 import basicGeometry.ZFactory;
+import basicGeometry.ZPoint;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
+import transform.ZJtsTransform;
 import utils.GeoMath;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -32,7 +35,6 @@ public class Block {
 
     private List<Building> buildings;
     private Point centroidLatLon;
-    private Point centroid;
 
     /* ------------- constructor ------------- */
 
@@ -62,23 +64,19 @@ public class Block {
             absCoords[i] = new Coordinate(absPts[i][0], absPts[i][1]);
         }
         this.shape = ZFactory.jtsgf.createPolygon(absCoords);
+
+        // move to shape centroid
+        Point centroid = shape.getCentroid();
+        ZJtsTransform transform = new ZJtsTransform();
+        transform.addTranslate2D(new ZPoint(centroid.getX() * -1, centroid.getY() * -1));
+        shape = (Polygon) transform.applyToGeometry2D(shape);
     }
 
     /**
      * calculate geometry properties from shape
      */
-    public void initProperties() {
-        this.centroid = shape.getCentroid();
+    public void initShapeDescriptor() {
         this.shapeDescriptor = new ZShapeDescriptor(shape);
-    }
-
-    /* ------------- member function: block matching ------------- */
-
-    /**
-     * calculate geometry properties from shape
-     */
-    public void initProperties2() {
-        this.centroid = shape.getCentroid();
     }
 
     /* ------------- setter & getter ------------- */
@@ -174,10 +172,6 @@ public class Block {
 
     public List<Building> getBuildings() {
         return buildings;
-    }
-
-    public Point getCentroid() {
-        return centroid;
     }
 
     /* ------------- draw ------------- */

@@ -117,7 +117,7 @@ public class DBManager {
         try {
             stmt = conn.createStatement();
 
-            ResultSet rs = stmt.executeQuery("select id, st_astext(geom), area, gsi, fsi, city_name, city_ratio, building_ids, st_astext(shape), shape_descriptor, axes, axes_new from blocks_new where id=" + id);
+            ResultSet rs = stmt.executeQuery("select id, st_astext(geom), area, gsi, fsi, city_name, city_ratio, building_ids, st_astext(shape), shape_descriptor, axes, axes_new, axes_obb from blocks_new where id=" + id);
             WKTReader reader = new WKTReader();
             while (rs.next()) {
                 Block block = new Block();
@@ -128,18 +128,21 @@ public class DBManager {
                 block.setFSI(rs.getDouble(5));
                 block.setCityName(rs.getString(6));
                 block.setCityRatio(rs.getDouble(7));
-                Array arr1 = rs.getArray(8);
-                List<Long> ids = Arrays.asList((Long[]) arr1.getArray());
+                Array building_ids = rs.getArray(8);
+                List<Long> ids = Arrays.asList((Long[]) building_ids.getArray());
                 block.setBuildingIDs(ids);
                 block.setShape(ZTransform.LineStringToPolygon((LineString) reader.read(rs.getString(9))));
-                Array arr2 = rs.getArray(10);
-                Array arr3 = rs.getArray(11);
-                Array arr4 = rs.getArray(12);
+                Array shape_descriptor = rs.getArray(10);
+                Array axes = rs.getArray(11);
+                Array axes_new = rs.getArray(12);
+                Array axes_obb = rs.getArray(13);
                 block.setShapeDescriptor(new ZShapeDescriptor(
-                        (Double[]) arr2.getArray(), (Double[]) arr3.getArray(), (Double[]) arr4.getArray()
+                        (Double[]) shape_descriptor.getArray(),
+                        (Double[]) axes.getArray(),
+                        (Double[]) axes_new.getArray(),
+                        (Double[]) axes_obb.getArray()
                 ));
 
-                block.initProperties2();
                 return block;
             }
         } catch (SQLException | ParseException e) {
@@ -148,55 +151,54 @@ public class DBManager {
         return null;
     }
 
-    /**
-     * request all valid blocks from database for matching
-     *
-     * @param areaRange valid range of block area
-     * @param gsiRange  valid range of block GSI
-     * @param fsiRange  valid range of block FSI
-     * @return java.util.List<elements.Block>
-     */
-    @Deprecated
-    public List<Block> collectBlocksConstrain(double[] areaRange, double[] gsiRange, double[] fsiRange) {
-        List<Block> result = new ArrayList<>();
-        try {
-            stmt = conn.createStatement();
-            String query =
-                    "select id, st_astext(geom), area, gsi, fsi, city_name, city_ratio, building_ids, st_astext(shape), shape_descriptor, axes, axes_new from blocks_new " +
-                            "where area between " + areaRange[0] + " and " + areaRange[1];
-
-            ResultSet rs = stmt.executeQuery(query);
-            WKTReader reader = new WKTReader();
-            while (rs.next()) {
-                Block block = new Block();
-                block.setID(rs.getLong(1));
-                block.setGeomLatLon((LineString) reader.read(rs.getString(2)));
-                block.setArea(rs.getDouble(3));
-                block.setGSI(rs.getDouble(4));
-                block.setFSI(rs.getDouble(5));
-                block.setCityName(rs.getString(6));
-                block.setCityRatio(rs.getDouble(7));
-                Array arr1 = rs.getArray(8);
-                List<Long> ids = Arrays.asList((Long[]) arr1.getArray());
-                block.setBuildingIDs(ids);
-                block.setShape(ZTransform.LineStringToPolygon((LineString) reader.read(rs.getString(9))));
-                Array arr2 = rs.getArray(10);
-                Array arr3 = rs.getArray(11);
-                Array arr4 = rs.getArray(12);
-                block.setShapeDescriptor(new ZShapeDescriptor(
-                        (Double[]) arr2.getArray(), (Double[]) arr3.getArray(), (Double[]) arr4.getArray()
-                ));
-                block.initProperties2();
-
-                result.add(block);
-            }
-        } catch (SQLException | ParseException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println(">>> collected " + result.size() + " valid block samples");
-        return result;
-    }
+//    /**
+//     * request all valid blocks from database for matching
+//     *
+//     * @param areaRange valid range of block area
+//     * @param gsiRange  valid range of block GSI
+//     * @param fsiRange  valid range of block FSI
+//     * @return java.util.List<elements.Block>
+//     */
+//    @Deprecated
+//    public List<Block> collectBlocksConstrain(double[] areaRange, double[] gsiRange, double[] fsiRange) {
+//        List<Block> result = new ArrayList<>();
+//        try {
+//            stmt = conn.createStatement();
+//            String query =
+//                    "select id, st_astext(geom), area, gsi, fsi, city_name, city_ratio, building_ids, st_astext(shape), shape_descriptor, axes, axes_new from blocks_new " +
+//                            "where area between " + areaRange[0] + " and " + areaRange[1];
+//
+//            ResultSet rs = stmt.executeQuery(query);
+//            WKTReader reader = new WKTReader();
+//            while (rs.next()) {
+//                Block block = new Block();
+//                block.setID(rs.getLong(1));
+//                block.setGeomLatLon((LineString) reader.read(rs.getString(2)));
+//                block.setArea(rs.getDouble(3));
+//                block.setGSI(rs.getDouble(4));
+//                block.setFSI(rs.getDouble(5));
+//                block.setCityName(rs.getString(6));
+//                block.setCityRatio(rs.getDouble(7));
+//                Array arr1 = rs.getArray(8);
+//                List<Long> ids = Arrays.asList((Long[]) arr1.getArray());
+//                block.setBuildingIDs(ids);
+//                block.setShape(ZTransform.LineStringToPolygon((LineString) reader.read(rs.getString(9))));
+//                Array arr2 = rs.getArray(10);
+//                Array arr3 = rs.getArray(11);
+//                Array arr4 = rs.getArray(12);
+//                block.setShapeDescriptor(new ZShapeDescriptor(
+//                        (Double[]) arr2.getArray(), (Double[]) arr3.getArray(), (Double[]) arr4.getArray()
+//                ));
+//
+//                result.add(block);
+//            }
+//        } catch (SQLException | ParseException e) {
+//            e.printStackTrace();
+//        }
+//
+//        System.out.println(">>> collected " + result.size() + " valid block samples");
+//        return result;
+//    }
 
     /* ------------- pre-processing ------------- */
 
@@ -378,7 +380,35 @@ public class DBManager {
                 block.setID(rs.getLong(1));
                 block.setShape(ZTransform.LineStringToPolygon((LineString) reader.read(rs.getString(2))));
 
-                block.initProperties();
+                result.add(block);
+            }
+        } catch (SQLException | ParseException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println(">>> collected " + result.size() + " valid block samples to update");
+        return result;
+    }
+
+    /**
+     * collect blocks to update "shape" and "axes_obb"
+     *
+     * @return java.util.List<elements.Block>
+     */
+    public List<Block> collectBlockForUpdate2() {
+        List<Block> result = new ArrayList<>();
+
+        try {
+            stmt = conn.createStatement();
+            String query = "select id, st_astext(geom), city_ratio from blocks_new";
+            WKTReader reader = new WKTReader();
+            ResultSet rs = stmt.executeQuery(query);
+            while (rs.next()) {
+                Block block = new Block();
+                block.setID(rs.getLong(1));
+                block.setGeomLatLon((LineString) reader.read(rs.getString(2)));
+                block.setCityRatio(rs.getDouble(3));
+
                 result.add(block);
             }
         } catch (SQLException | ParseException e) {
@@ -396,7 +426,7 @@ public class DBManager {
      * @param newSD   new shape_descriptor
      * @param axesNew new axes
      */
-    public void updateTableNewAxes(long id, List<Double> newSD, List<Double> axesNew) {
+    public void updateTableSDAxesNew(long id, List<Double> newSD, List<Double> axesNew) {
         try {
             stmt = conn.createStatement();
             String sql = "UPDATE public.blocks_new SET"
@@ -423,6 +453,28 @@ public class DBManager {
                     + " axes = " + "'{" + StringUtils.join(axes, ",") + "}'"
                     + "WHERE id = " + id;
 
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * perform updating "axes_obb" for each block
+     *
+     * @param id   id
+     * @param axes new axes
+     */
+    public void updateTableAxesOBB(long id, List<Double> axes,Polygon shape) {
+        try {
+            stmt = conn.createStatement();
+            WKTWriter writer = new WKTWriter();
+            String shapeString = writer.write(ZTransform.PolygonToLineString(shape).get(0));
+            String sql = "UPDATE public.blocks_new SET"
+                    + " axes_obb = " + "'{" + StringUtils.join(axes, ",") + "}'"
+                    + ", shape = '" + shapeString + "'"
+                    + " WHERE id = " + id;
+            System.out.println(sql);
             stmt.executeUpdate(sql);
         } catch (SQLException e) {
             e.printStackTrace();
