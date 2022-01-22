@@ -12,12 +12,14 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.locationtech.jts.io.WKTWriter;
+import org.postgresql.util.HStoreConverter;
 import transform.ZTransform;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * database manager
@@ -283,7 +285,9 @@ public class DBManager {
                 }
                 b.setType(rs.getString(4).trim());
                 if (rs.getString(5) != null && rs.getString(5).length() > 0) {
-                    b.setS3db(rs.getString(5).trim());
+                    String s3db = rs.getString(5).trim();
+                    Map<String, String> map = HStoreConverter.fromString(s3db);
+                    b.setS3db(map);
                 }
                 b.setTimestamp(rs.getTimestamp(6));
 
@@ -465,7 +469,7 @@ public class DBManager {
      * @param id   id
      * @param axes new axes
      */
-    public void updateTableAxesOBB(long id, List<Double> axes,Polygon shape) {
+    public void updateTableAxesOBB(long id, List<Double> axes, Polygon shape) {
         try {
             stmt = conn.createStatement();
             WKTWriter writer = new WKTWriter();

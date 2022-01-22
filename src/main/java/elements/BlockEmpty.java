@@ -6,7 +6,7 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 
 /**
- * description
+ * an empty block
  *
  * @author ZHANG Baizhou zhangbz
  * @project city_site_matching

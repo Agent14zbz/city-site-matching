@@ -3,7 +3,7 @@ package elements;
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
- * description
+ * an instance which only record factors to compare
  *
  * @author ZHANG Baizhou zhangbz
  * @project city_site_matching

@@ -1,16 +1,19 @@
 package elements;
 
 import basicGeometry.ZFactory;
+import math.ZMath;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
+import transform.ZJtsTransform;
+import transform.ZTransform;
 import utils.GeoMath;
 
-import java.util.Date;
+import java.util.*;
 
 /**
- * description
+ * building object
  *
  * @author ZHANG Baizhou zhangbz
  * @project city_site_matching
@@ -22,15 +25,22 @@ public class Building {
     private LineString geomLatLon;
     private String name = "";
     private String type;
-    private String s3db;
+    private Map<String, String> s3db;
+
     private Date timestamp;
 
     private long blockID;
+    private Block block;
     private Polygon baseShape;
+    private double baseArea;
 
-//    private List<Polygon> faces;
-//    private long storey;
-//    private static final double storeyHeight = 3.6;
+    private double height;
+    private double buildingArea;
+
+    private Polygon baseShapeTrans;
+    private List<Polygon> faces;
+
+    private static final double storeyHeight = 3.6;
 
     /* ------------- constructor ------------- */
 
@@ -62,32 +72,114 @@ public class Building {
             absCoords[i] = new Coordinate(absPts[i][0], absPts[i][1], 0);
         }
         this.baseShape = ZFactory.jtsgf.createPolygon(absCoords);
+        this.baseArea = baseShape.getArea();
     }
 
-//    /**
-//     * generate all faces of a building
-//     */
-//    public void generateVolume() {
-//        double height = storey * storeyHeight;
-//        this.faces = new ArrayList<>();
-//        faces.add(baseShape);
-//        for (int i = 0; i < baseShape.getNumPoints() - 1; i++) {
-//            Coordinate[] coords = new Coordinate[5];
-//            coords[0] = baseShape.getCoordinates()[i];
-//            coords[1] = baseShape.getCoordinates()[(i + 1) % (baseShape.getNumPoints() - 1)];
-//            coords[2] = new Coordinate(coords[1].getX(), coords[1].getY(), height);
-//            coords[3] = new Coordinate(coords[0].getX(), coords[0].getY(), height);
-//            coords[4] = coords[0];
-//            Polygon face = ZFactory.jtsgf.createPolygon(coords);
-//            faces.add(face);
+    /**
+     * calculate 3D information
+     */
+    public void cal3DInfo() {
+        // parse s3db to get height or building levels
+        if (s3db != null) {
+            for (String s : s3db.keySet()) {
+                if (s.equals("building:levels")) {
+                    int level = Integer.parseInt(s3db.get("building:levels"));
+                    if (level > 0) {
+                        this.buildingArea = level * baseArea;
+                        this.height = level * storeyHeight;
+                    } else {
+                        this.buildingArea = baseArea;
+                        this.height = storeyHeight;
+                    }
+                    break;
+                } else if (s.equals("height")) {
+                    this.height = Double.parseDouble(s3db.get("height"));
+                    int level = (int) Math.round(height / storeyHeight);
+                    if (level > 0) {
+                        this.buildingArea = level * baseArea;
+                    } else {
+                        this.buildingArea = baseArea;
+                    }
+                    break;
+                } else {
+                    this.height = 0;
+                    this.buildingArea = 0;
+                }
+            }
+        }
+    }
+
+    /**
+     * transform base shape by given ZJtsTransform
+     *
+     * @param transform input ZJtsTransform
+     */
+    public void transformBase(ZJtsTransform transform) {
+        this.baseShapeTrans = (Polygon) transform.applyToGeometry2D(baseShape);
+    }
+
+    /**
+     * generate all faces of a building
+     */
+    public void generateVolume(double buildingAreaAll, int building3DNum) {
+        this.faces = new ArrayList<>();
+        ZTransform.validateGeometry3D(baseShapeTrans);
+        faces.add(baseShapeTrans);
+
+//        // parse s3db to get height or building levels
+//        if (s3db != null) {
+//            for (String s : s3db.keySet()) {
+//                if (s.equals("height")) {
+//                    flag = true;
+//                    height = Double.parseDouble(s3db.get("height"));
+//                    break;
+//                } else if (s.equals("building:levels")) {
+//                    flag = true;
+//                    int level = Integer.parseInt(s3db.get("building:levels"));
+//                    height = level * storeyHeight;
+//                    break;
+//                }
+//            }
 //        }
-//        Coordinate[] topFaceCoords = new Coordinate[this.baseShape.getNumPoints()];
-//        for (int i = 0; i < baseShape.getNumPoints(); i++) {
-//            topFaceCoords[i] = new Coordinate(baseShape.getCoordinates()[i].getX(), baseShape.getCoordinates()[i].getY(), height);
-//        }
-//        Polygon topFace = ZFactory.jtsgf.createPolygon(topFaceCoords);
-//        faces.add(topFace);
-//    }
+
+        // if s3db contains height or building levels, generate the volume accordingly
+        // if s3db doesn't, generate the volume approximately according to block fsi
+        if (height == 0) {
+            double blockFSI = block.getFSI();
+            double buildingAreaByFSI = blockFSI * block.getArea();
+            double areaOfOthers = buildingAreaByFSI - buildingAreaAll;
+            int numOfOthers = block.getBuildings().size() - building3DNum;
+
+            double buildingBaseAreaAll = block.getGSI() * block.getArea();
+
+            double buildingArea = areaOfOthers * (baseArea / buildingBaseAreaAll);
+            double randomBuildingArea = buildingArea * ZMath.random(0.9, 1.1);
+
+            this.buildingArea = randomBuildingArea;
+            int level = (int) Math.round(randomBuildingArea / baseArea);
+            if (level > 0) {
+                this.height = level * storeyHeight;
+            } else {
+                this.height = storeyHeight;
+            }
+        }
+        for (int i = 0; i < baseShapeTrans.getNumPoints() - 1; i++) {
+            Coordinate[] coords = new Coordinate[5];
+            coords[0] = baseShapeTrans.getCoordinates()[i];
+            coords[1] = baseShapeTrans.getCoordinates()[(i + 1) % (baseShapeTrans.getNumPoints() - 1)];
+            coords[2] = new Coordinate(coords[1].getX(), coords[1].getY(), height);
+            coords[3] = new Coordinate(coords[0].getX(), coords[0].getY(), height);
+            coords[4] = coords[0];
+            Polygon face = ZFactory.jtsgf.createPolygon(coords);
+            faces.add(face);
+        }
+        Coordinate[] topFaceCoords = new Coordinate[this.baseShapeTrans.getNumPoints()];
+        for (int i = 0; i < baseShapeTrans.getNumPoints(); i++) {
+            topFaceCoords[i] = new Coordinate(baseShapeTrans.getCoordinates()[i].getX(), baseShapeTrans.getCoordinates()[i].getY(), height);
+        }
+        Polygon topFace = ZFactory.jtsgf.createPolygon(topFaceCoords);
+        faces.add(topFace);
+    }
 
 //    /**
 //     * transform by giving matrix
@@ -121,7 +213,7 @@ public class Building {
         this.type = type;
     }
 
-    public void setS3db(String s3db) {
+    public void setS3db(Map<String, String> s3db) {
         this.s3db = s3db;
     }
 
@@ -133,22 +225,25 @@ public class Building {
         this.blockID = blockID;
     }
 
+    public void setBlock(Block block) {
+        this.block = block;
+    }
+
     public void setBaseShape(Polygon baseShape) {
         this.baseShape = baseShape;
     }
-
-//    public void setStorey(long storey) {
-//        this.storey = storey;
-//    }
 
     public Polygon getBaseShape() {
         return baseShape;
     }
 
+    public List<Polygon> getFaces() {
+        return faces;
+    }
 
-//    public List<Polygon> getFaces() {
-//        return faces;
-//    }
+    public double getBuildingArea() {
+        return buildingArea;
+    }
 
     /* ------------- draw ------------- */
 

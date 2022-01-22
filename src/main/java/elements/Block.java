@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * description
+ * block object
  *
  * @author ZHANG Baizhou zhangbz
  * @project city_site_matching
