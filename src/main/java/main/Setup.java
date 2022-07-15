@@ -10,6 +10,7 @@ import igeo.IG;
 import org.locationtech.jts.geom.Polygon;
 import processing.core.PApplet;
 import render.JtsRender;
+import render.ZRender;
 import transform.ZTransform;
 
 import java.util.ArrayList;
@@ -77,27 +78,31 @@ public class Setup extends PApplet {
             pushStyle();
             strokeWeight(2f);
             stroke(255, 0, 0);
-            polyAxesPCA1[0].displayAsVector(
+            ZRender.drawZPointAsVec2D(
                     this,
+                    polyAxesPCA1[0],
                     new ZPoint(e.getCentroid()),
                     30,
                     0
             );
-            polyAxesPCA1[0].displayAsVector(
+            ZRender.drawZPointAsVec2D(
                     this,
+                    polyAxesPCA1[0],
                     new ZPoint(e.getCentroid()),
                     -30,
                     0
             );
             stroke(0, 255, 0);
-            polyAxesPCA1[1].displayAsVector(
+            ZRender.drawZPointAsVec2D(
                     this,
+                    polyAxesPCA1[1],
                     new ZPoint(e.getCentroid()),
                     15,
                     0
             );
-            polyAxesPCA1[1].displayAsVector(
+            ZRender.drawZPointAsVec2D(
                     this,
+                    polyAxesPCA1[1],
                     new ZPoint(e.getCentroid()),
                     -15,
                     0
@@ -114,27 +119,31 @@ public class Setup extends PApplet {
             pushStyle();
             strokeWeight(2f);
             stroke(255, 0, 0);
-            polyAxesPCA2[0].displayAsVector(
+            ZRender.drawZPointAsVec2D(
                     this,
+                    polyAxesPCA2[0],
                     new ZPoint(e.getCentroid()),
                     30,
                     0
             );
-            polyAxesPCA2[0].displayAsVector(
+            ZRender.drawZPointAsVec2D(
                     this,
+                    polyAxesPCA2[0],
                     new ZPoint(e.getCentroid()),
                     -30,
                     0
             );
             stroke(0, 255, 0);
-            polyAxesPCA2[1].displayAsVector(
+            ZRender.drawZPointAsVec2D(
                     this,
+                    polyAxesPCA2[1],
                     new ZPoint(e.getCentroid()),
                     15,
                     0
             );
-            polyAxesPCA2[1].displayAsVector(
+            ZRender.drawZPointAsVec2D(
                     this,
+                    polyAxesPCA2[1],
                     new ZPoint(e.getCentroid()),
                     -15,
                     0
@@ -160,27 +169,31 @@ public class Setup extends PApplet {
                 pushStyle();
                 strokeWeight(2f);
                 stroke(255, 0, 0);
-                polyAxesVecs[0].displayAsVector(
+                ZRender.drawZPointAsVec2D(
                         this,
+                        polyAxesVecs[0],
                         new ZPoint(e.getCentroid()),
                         30,
                         0
                 );
-                polyAxesVecs[0].displayAsVector(
+                ZRender.drawZPointAsVec2D(
                         this,
+                        polyAxesVecs[0],
                         new ZPoint(e.getCentroid()),
                         -30,
                         0
                 );
                 stroke(0, 255, 0);
-                polyAxesVecs[1].displayAsVector(
+                ZRender.drawZPointAsVec2D(
                         this,
+                        polyAxesVecs[1],
                         new ZPoint(e.getCentroid()),
                         15,
                         0
                 );
-                polyAxesVecs[1].displayAsVector(
+                ZRender.drawZPointAsVec2D(
                         this,
+                        polyAxesVecs[1],
                         new ZPoint(e.getCentroid()),
                         -15,
                         0
@@ -205,27 +218,31 @@ public class Setup extends PApplet {
                 pushStyle();
                 strokeWeight(2f);
                 stroke(255, 0, 0);
-                polyAxesVecs[0].displayAsVector(
+                ZRender.drawZPointAsVec2D(
                         this,
+                        polyAxesVecs[0],
                         new ZPoint(e.getCentroid()),
                         30,
                         0
                 );
-                polyAxesVecs[0].displayAsVector(
+                ZRender.drawZPointAsVec2D(
                         this,
+                        polyAxesVecs[0],
                         new ZPoint(e.getCentroid()),
                         -30,
                         0
                 );
                 stroke(0, 255, 0);
-                polyAxesVecs[1].displayAsVector(
+                ZRender.drawZPointAsVec2D(
                         this,
+                        polyAxesVecs[1],
                         new ZPoint(e.getCentroid()),
                         15,
                         0
                 );
-                polyAxesVecs[1].displayAsVector(
+                ZRender.drawZPointAsVec2D(
                         this,
+                        polyAxesVecs[1],
                         new ZPoint(e.getCentroid()),
                         -15,
                         0
@@ -315,9 +332,9 @@ public class Setup extends PApplet {
                 noFill();
                 jtsRender.drawGeometry(empty);
                 stroke(0);
-                for (int j = 0; j < matchManager.getBest5().get(i).size(); j++) {
+                for (int j = 0; j < matchManager.getBestMatch().get(i).size(); j++) {
                     translate(300, 0);
-                    Block e = matchManager.getBest5().get(i).get(j);
+                    Block e = matchManager.getBestMatch().get(i).get(j);
                     jtsRender.drawGeometry(e.getShape());
                     for (Building bu : e.getBuildings()) {
                         jtsRender.drawGeometry3D(bu.getBaseShape());
@@ -393,17 +410,21 @@ public class Setup extends PApplet {
             drawSite = true;
             drawResult = true;
             drawbest5 = true;
-            for (int i = 0; i < matchManager.getBest5().size(); i++) {
-                List<Block> bests = matchManager.getBest5().get(i);
+            for (int i = 0; i < matchManager.getBestMatch().size(); i++) {
+                List<Block> bests = matchManager.getBestMatch().get(i);
+                List<Double> bestDists = matchManager.getBestMatchDists().get(i);
+                List<Double> dists = new ArrayList<>();
                 List<Double> gsis = new ArrayList<>();
                 List<Double> fsis = new ArrayList<>();
                 for (int j = 0; j < bests.size(); j++) {
                     Block best = bests.get(j);
                     gsis.add(best.getGSI());
                     fsis.add(best.getFSI());
+                    dists.add(bestDists.get(j));
                 }
                 System.out.println("block " + i + " matched gsi: " + gsis);
                 System.out.println("block " + i + " matched fsi: " + fsis);
+                System.out.println("block " + i + " matched distance: " + dists);
             }
         }
 
@@ -411,8 +432,8 @@ public class Setup extends PApplet {
         if (key == '+') {
             IG.init();
             // best 5
-            for (int i = 0; i < matchManager.getBest5().size(); i++) {
-                List<Block> bests = matchManager.getBest5().get(i);
+            for (int i = 0; i < matchManager.getBestMatch().size(); i++) {
+                List<Block> bests = matchManager.getBestMatch().get(i);
                 for (int j = 0; j < bests.size(); j++) {
                     Block best = bests.get(j);
                     ZTransform.PolygonToICurve(best.getShape()).layer("bestMatchBlock" + i + "_" + j);
