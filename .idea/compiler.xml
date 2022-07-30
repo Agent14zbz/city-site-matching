@@ -10,5 +10,8 @@
         <module name="Ztools" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ztools" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

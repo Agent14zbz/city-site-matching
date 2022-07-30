@@ -14,13 +14,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>org.github.Agent14zbz</groupId>
-            <artifactId>Ztools</artifactId>
-            <version>0.1</version>
-            <scope>compile</scope>
-        </dependency>
-
         <!-- https://mvnrepository.com/artifact/quil/processing-core -->
         <dependency>
             <groupId>quil</groupId>
@@ -66,6 +59,12 @@
             <groupId>com.github.archialgo</groupId>
             <artifactId>HE_Mesh-maven-lib</artifactId>
             <version>2019.0.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.github.zhangbz764</groupId>
+            <artifactId>ztools</artifactId>
+            <version>0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

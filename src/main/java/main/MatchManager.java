@@ -43,7 +43,8 @@ public class MatchManager {
     private List<ZPoint[]> bestAxes;
 
     private List<Polygon> emptiesOrigin;
-    private List<List<Block>> best5;
+    private List<List<Block>> bestMatch;
+    private List<List<Double>> bestMatchDists;
 
     // test sites
     private List<Polygon> site_test_block;
@@ -177,7 +178,8 @@ public class MatchManager {
         this.blockMatches = new ArrayList<>();
 
         this.emptiesOrigin = new ArrayList<>();
-        this.best5 = new ArrayList<>();
+        this.bestMatch = new ArrayList<>();
+        this.bestMatchDists = new ArrayList<>();
         // load block match samples refer to empty block properties
         int count = 0;
         for (int i = 0; i < blockEmpties.size(); i++) {
@@ -204,6 +206,7 @@ public class MatchManager {
                 }
                 int[] min = ZMath.getMinIndices(vectorDists, 10);
                 List<Block> bests = new ArrayList<>();
+                List<Double> bestDists = new ArrayList<>();
                 for (int j = 0; j < min.length; j++) {
                     BlockMatch best5s = blockMatchList.get(min[j]);
                     long best5id = best5s.getId();
@@ -219,8 +222,10 @@ public class MatchManager {
                         double area = building.getBuildingArea();
                     }
                     bests.add(result);
+                    bestDists.add(vectorDists[min[j]]);
                 }
-                best5.add(bests);
+                bestMatch.add(bests);
+                bestMatchDists.add(bestDists);
 
                 int random = 0;
                 if (i == 0) {
@@ -325,19 +330,30 @@ public class MatchManager {
 
                 // if the intersection ratio is still lower than standard, rotate to find the best direction
                 double maxInterRatio = interRatio[maxInter];
-                if (maxInterRatio < 0.94) {
-                    double[] ratioAfterRotate = new double[50];
-                    double angleStep = Math.PI / 25;
-                    for (int j = 0; j < 50; j++) {
-                        bestMatchTransform.addRotateAboutPoint2D(angleStep, emptyCentroid);
-                        Polygon rotateTemp = (Polygon) bestMatchTransform.applyToGeometry2D(best.getShape());
-                        ratioAfterRotate[j] = rotateTemp.intersection(emptyShape).getArea() / emptyArea;
-                    }
-                    int maxRatioAfterRotate = ZMath.getMaxIndex(ratioAfterRotate);
-                    bestMatchTransform.addRotateAboutPoint2D(maxRatioAfterRotate * angleStep, emptyCentroid);
-                    System.out.println(">>>> rotate optimized for block " + i + "   before: " + maxInterRatio + "  after: " + ratioAfterRotate[maxRatioAfterRotate]);
-                    count++;
+                double[] ratioAfterRotate = new double[50];
+                double angleStep = Math.PI / 25;
+                for (int j = 0; j < 50; j++) {
+                    bestMatchTransform.addRotateAboutPoint2D(angleStep, emptyCentroid);
+                    Polygon rotateTemp = (Polygon) bestMatchTransform.applyToGeometry2D(best.getShape());
+                    ratioAfterRotate[j] = rotateTemp.intersection(emptyShape).getArea() / emptyArea;
                 }
+                int maxRatioAfterRotate = ZMath.getMaxIndex(ratioAfterRotate);
+                bestMatchTransform.addRotateAboutPoint2D(maxRatioAfterRotate * angleStep, emptyCentroid);
+                System.out.println(">>>> rotate optimized for block " + i + "   before: " + maxInterRatio + "  after: " + ratioAfterRotate[maxRatioAfterRotate]);
+                count++;
+//                if (maxInterRatio < 0.94) {
+//                    double[] ratioAfterRotate = new double[50];
+//                    double angleStep = Math.PI / 25;
+//                    for (int j = 0; j < 50; j++) {
+//                        bestMatchTransform.addRotateAboutPoint2D(angleStep, emptyCentroid);
+//                        Polygon rotateTemp = (Polygon) bestMatchTransform.applyToGeometry2D(best.getShape());
+//                        ratioAfterRotate[j] = rotateTemp.intersection(emptyShape).getArea() / emptyArea;
+//                    }
+//                    int maxRatioAfterRotate = ZMath.getMaxIndex(ratioAfterRotate);
+//                    bestMatchTransform.addRotateAboutPoint2D(maxRatioAfterRotate * angleStep, emptyCentroid);
+//                    System.out.println(">>>> rotate optimized for block " + i + "   before: " + maxInterRatio + "  after: " + ratioAfterRotate[maxRatioAfterRotate]);
+//                    count++;
+//                }
 
                 // get building bases, calculate 3d info
                 List<Long> buildingIDs = best.getBuildingIDs();
@@ -399,8 +415,12 @@ public class MatchManager {
         return emptiesOrigin;
     }
 
-    public List<List<Block>> getBest5() {
-        return best5;
+    public List<List<Block>> getBestMatch() {
+        return bestMatch;
+    }
+
+    public List<List<Double>> getBestMatchDists() {
+        return bestMatchDists;
     }
 
     public BlockEmpty getTestBlockPCA() {
