@@ -6,6 +6,7 @@ import elements.Block;
 import elements.BlockMatch;
 import elements.Building;
 import elements.CityRaw;
+import math.ZGeoMath;
 import org.apache.commons.lang3.StringUtils;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
@@ -66,6 +67,49 @@ public class DBManager {
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
+    }
+
+    /* ------------- matching ------------- */
+
+    public List<Block> getBlockData(int num) {
+        List<Block> data = new ArrayList<>();
+        try {
+            stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("select id, st_astext(geom), area, gsi, fsi, city_name, city_ratio, building_ids, st_astext(shape), shape_descriptor, axes, axes_new, axes_obb from blocks_new " +
+                    "limit " + num);
+            WKTReader reader = new WKTReader();
+
+            while (rs.next()) {
+                Block block = new Block();
+                block.setID(rs.getLong(1));
+                block.setGeomLatLon((LineString) reader.read(rs.getString(2)));
+                block.setArea(rs.getDouble(3));
+                block.setGSI(rs.getDouble(4));
+                block.setFSI(rs.getDouble(5));
+                block.setCityName(rs.getString(6));
+                block.setCityRatio(rs.getDouble(7));
+                Array building_ids = rs.getArray(8);
+                List<Long> ids = Arrays.asList((Long[]) building_ids.getArray());
+                block.setBuildingIDs(ids);
+                block.setShape((Polygon) ZTransform.LineStringToPolygon((LineString) reader.read(rs.getString(9))).reverse());
+                Array shape_descriptor = rs.getArray(10);
+                Array axes = rs.getArray(11);
+                Array axes_new = rs.getArray(12);
+                Array axes_obb = rs.getArray(13);
+                block.setShapeDescriptor(new ZShapeDescriptor(
+                        (Double[]) shape_descriptor.getArray(),
+                        (Double[]) axes.getArray(),
+                        (Double[]) axes_new.getArray(),
+                        (Double[]) axes_obb.getArray()
+                ));
+
+                data.add(block);
+            }
+        } catch (SQLException | ParseException e) {
+            e.printStackTrace();
+        }
+        System.out.println(">>> collected " + data.size() + " block data from alphaville");
+        return data;
     }
 
     /* ------------- matching ------------- */
@@ -296,6 +340,7 @@ public class DBManager {
         } catch (SQLException | ParseException e) {
             e.printStackTrace();
         }
+        System.out.println(buildings);
         return buildings;
     }
 

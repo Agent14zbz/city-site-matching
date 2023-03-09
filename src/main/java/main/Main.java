@@ -12,6 +12,7 @@ import processing.core.PApplet;
  */
 public class Main {
     public static void main(String[] args) {
-        PApplet.main("main.Setup");
+//        PApplet.main("main.Setup");
+        PApplet.main("main.ModelOutput");
     }
 }
