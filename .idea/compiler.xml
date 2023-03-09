@@ -6,7 +6,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="city_site_matching" />
+        <module name="city-block-matching" />
         <module name="Ztools" />
       </profile>
     </annotationProcessing>

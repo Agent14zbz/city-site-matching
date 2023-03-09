@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.example</groupId>
-    <artifactId>city_site_matching</artifactId>
+    <artifactId>city-block-matching</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
